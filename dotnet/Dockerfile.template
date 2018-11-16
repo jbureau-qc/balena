@@ -1,14 +1,29 @@
 FROM resin/%%RESIN_MACHINE_NAME%%-node:7-slim
-
+# Defines our working directory in container
 WORKDIR /usr/src/app
 
-# Install dependencies listed at https://github.com/dotnet/core/blob/master/Documentation/prereqs.md
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y \
-    libunwind8 gettext libicu57 liblttng-ust0 libcurl3 libssl1.0.2 libuuid1 unzip && \
+    apt-get install -yq wget && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+	
+# Update Ubuntu 16.04
+sudo apt-get -y update
 
-# Copy the standalone application
-COPY --from=build /usr/src/app/bin/Debug/netcoreapp2.0/linux-arm/publish /usr/src/app
+# Install the packages necessary for .NET Core
+sudo apt-get -y install libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev uuid-dev
 
-CMD /usr/src/app/resin-dotnet-hello-world
+# Download the latest binaries for .NET Core 2
+wget https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-linux-arm.tar.gz
+
+# Make a directory for .NET Core to live in
+mkdir /home/dotnet
+
+# Unzip the binaries into the directory we just created
+tar -xvf dotnet-runtime-latest-linux-arm.tar.gz -C /home/dotnet
+
+# Now add the path to the dotnet executable to the environment path
+# This ensures the next time you log in, the dotnet exe is on your path
+echo "PATH=\$PATH:/home/dotnet" >> dotnetcore.sh
+sudo mv dotnetcore.sh /etc/profile.d
+
+PATH=$PATH:/home/dotnet
